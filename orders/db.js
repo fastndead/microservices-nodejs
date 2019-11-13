@@ -1,22 +1,28 @@
 import MongoDB from "mongodb";
 
+const uri = "mongodb+srv://admin:qwerty123456789@cluster0-ivhai.mongodb.net/test?retryWrites=true&w=majority";
+const client = MongoDB.MongoClient(uri, {useNewUrlParser: true, useUnifiedTopology: true});
+
 export default class db {
     constructor() {
-        this.uri = process.env.MONGODB_URI || "mongodb+srv://admin:qwe123@pet-project-lxbpx.mongodb.net/orders?retryWrites=true&w=majority";
-        this.client = MongoDB.MongoClient(this.uri, {useNewUrlParser: true, useUnifiedTopology: true});
         this.dbName = "orders";
-        this.dbConnection = this.client.connect();
+        this.dbPromise = this.getDbPromise();
+    }
 
-        this.dbConnection.then(() => {
-            console.log("Database is connected")
-        }).catch(err => {
-            console.error(`Database is NOT connected. error: ${err}`);
-        });
+    async getDbPromise() {
+        if (!client.isConnected()) {
+            return await client.connect().then(res => {
+                console.log(`DB is connected!`);
+                return client.db(this.dbName)
+            }).catch(err => {
+                console.log(`DB is NOT connected. Error: ${err}`);
+            });
+        }
+        return client.db(this.dbName);
     }
 
     async getAll(collection) {
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName)
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .find({})
@@ -27,8 +33,7 @@ export default class db {
     async getById(collection, id) {
         const ObjectId = MongoDB.ObjectId;
         id = ObjectId(id);
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName)
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .findOne({_id: id});
@@ -36,8 +41,7 @@ export default class db {
     }
 
     async getAmount(collection, amount) {
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName);
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .find({})
@@ -47,8 +51,7 @@ export default class db {
     }
 
     async insertOne(collection, objToInsert) {
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName)
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .insertOne(objToInsert);
@@ -56,8 +59,7 @@ export default class db {
     }
 
     async insert(collection, array) {
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName);
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .insertMany(array);
@@ -67,8 +69,7 @@ export default class db {
     async deleteById(collection, id) {
         const ObjectId = MongoDB.ObjectId;
         id = ObjectId(id);
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName);
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .deleteOne({_id: id});
@@ -76,8 +77,9 @@ export default class db {
     }
 
     async update(collection, id, doc) {
-        return this.dbConnection.then(client => {
-            const db = client.db(this.dbName);
+        const ObjectId = MongoDB.ObjectId;
+        id = ObjectId(id);
+        return this.dbPromise.then(db => {
             return db
                 .collection(collection)
                 .replaceOne({_id: id}, doc);

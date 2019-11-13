@@ -33,7 +33,7 @@ app.get('/orders', (req, res) => {
 });
 
 app.get('/orders/:id', (req, res) => {
-    dbInstance.getById("orders", req.params.id,).then(result => {
+    dbInstance.getById("orders", req.params.id).then(result => {
         const promiseForBook = axios(`http://localhost:4545/books/${result.bookId}`).then(bookResponse => {
             result.book = bookResponse.data
         });
